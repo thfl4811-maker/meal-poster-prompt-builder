@@ -434,7 +434,22 @@ function updatePrompt(){
   const preset = presets.find(p => p.id===state.selectedPreset);
   const modeInfo = getModeInfo(preset);
   const mood = moodSelect.value;
+
+  const mealText = state.loadedMeals.length
+    ? state.loadedMeals.map(m => {
+        const lines = [`[${m.dateLabel}]`, ...m.dishes];
+        if(m.nutrition) lines.push(`영양정보: ${m.nutrition}`);
+        return lines.join('\n');
+      }).join('\n\n')
+    : '[나이스 식단을 아직 불러오지 않았습니다.]';
+
   promptBox.value = `${modeInfo.prompt}
+
+[나이스에서 불러온 실제 식단]
+${mealText}
+
+위 식단은 날짜별 순서 그대로 빠짐없이 반영한다.
+메뉴명, 알레르기 번호, 영양정보를 임의로 바꾸거나 생략하지 않는다.
 
 [추가 분위기 설정]
 전체 분위기는 "${mood}" 느낌으로 조정한다.
@@ -546,15 +561,22 @@ async function loadMeals(){
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'급식 조회 실패');
     if(!data.meals?.length){ status.textContent='선택 기간에 등록된 중식이 없습니다.'; return; }
+    state.loadedMeals = data.meals;
     out.innerHTML=data.meals.map(m=>`<div class="meal-item"><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
-    status.textContent=`${data.meals.length}일의 중식을 불러왔습니다.`;
+    updatePrompt();
+    status.textContent=`${data.meals.length}일의 중식을 불러왔습니다. 최종 프롬프트에 반영되었습니다.`;
   }catch(e){ status.textContent=e.message; status.className='api-status error'; }
 }
 
 document.getElementById('schoolSearchBtn').addEventListener('click',searchSchools);
 document.getElementById('schoolQuery').addEventListener('keydown',e=>{if(e.key==='Enter')searchSchools();});
 document.getElementById('loadMealsBtn').addEventListener('click',loadMeals);
-document.getElementById('clearMealsBtn').addEventListener('click',()=>{document.getElementById('mealResults').innerHTML='';document.getElementById('apiStatus').textContent='';});
+document.getElementById('clearMealsBtn').addEventListener('click',()=>{
+  state.loadedMeals=[];
+  document.getElementById('mealResults').innerHTML='';
+  document.getElementById('apiStatus').textContent='';
+  updatePrompt();
+});
 
 updateUI();
 </script>
