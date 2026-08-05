@@ -37,21 +37,21 @@
   .field label{display:block;font-size:13px;font-weight:800;margin-bottom:6px}
   .field input,.field select,textarea{width:100%;border:1px solid #cfd7e3;border-radius:12px;padding:11px 12px;background:#fff;font:inherit}
   .preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-  .preset-card{border:2px solid var(--line);border-radius:18px;overflow:hidden;background:#fff;cursor:pointer;transition:.16s ease}
+  .preset-card{border:2px solid var(--line);border-radius:18px;overflow:hidden;background:#fff;cursor:pointer;transition:.16s ease;display:flex;flex-direction:column}
   .preset-card:hover{transform:translateY(-2px);box-shadow:0 12px 20px rgba(15,23,42,.08)}
   .preset-card.active{border-color:var(--brand);box-shadow:0 0 0 4px rgba(255,122,0,.12)}
-  .thumb-wrap{padding:10px 10px 0}
-  .thumb{background:#f8fafc;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
-  .thumb-single img,.thumb-five img,.thumb-custom img{display:block;width:100%;height:170px;object-fit:cover}
+  .thumb-wrap{padding:10px 10px 0;display:flex;align-items:center;justify-content:center;background:#fff}
+  .thumb{background:#f8fafc;border-radius:14px;overflow:hidden;border:1px solid var(--line);width:100%;display:flex;align-items:center;justify-content:center}
+  .thumb-single img,.thumb-five img,.thumb-custom img{display:block;width:100%;height:auto;max-height:360px;object-fit:contain;background:#f8fafc}
   .thumb-five,.thumb-custom{display:grid;gap:4px;padding:6px;background:#fff}
   .thumb-five{grid-template-columns:repeat(5,1fr)}
   .thumb-custom{grid-template-columns:repeat(var(--cols,3),1fr)}
   .thumb-five .mini,.thumb-custom .mini{position:relative;border-radius:8px;overflow:hidden;border:1px solid #e7ebf1}
-  .thumb-five img,.thumb-custom img{height:120px}
+  .thumb-five img,.thumb-custom img{height:auto;max-height:260px;object-fit:contain;background:#f8fafc}
   .mini-badge{position:absolute;left:6px;top:6px;background:rgba(17,24,39,.82);color:#fff;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:800}
-  .preset-body{padding:12px 14px 14px}
+  .preset-body{padding:12px 14px 14px;flex:1}
   .preset-name{font-size:18px;font-weight:900;line-height:1.3;margin:0 0 6px}
-  .preset-desc{font-size:13px;line-height:1.55;color:var(--muted);min-height:60px}
+  .preset-desc{font-size:13px;line-height:1.55;color:var(--muted)}
   .pill-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
   .pill{display:inline-flex;align-items:center;border-radius:999px;background:#f2f4f7;color:#344054;font-size:11px;font-weight:800;padding:6px 8px}
   .pill.orange{background:var(--brand-soft);color:#b54708}
@@ -60,11 +60,11 @@
   .sticky{position:sticky;top:18px}
   .hero{display:grid;grid-template-columns:210px 1fr;gap:16px;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fafbfd;margin-bottom:16px}
   .hero-media{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff}
-  .hero-media img{display:block;width:100%;height:250px;object-fit:contain;background:#f8fafc}
+  .hero-media img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;background:#f8fafc}
   .hero-media.week,.hero-media.custom{padding:8px;display:grid;gap:6px;background:#fff}
   .hero-media.week{grid-template-columns:repeat(5,1fr)}
   .hero-media.custom{grid-template-columns:repeat(var(--cols,3),1fr)}
-  .hero-media.week img,.hero-media.custom img{height:250px;border-radius:10px;border:1px solid #e7ebf1}
+  .hero-media.week img,.hero-media.custom img{height:auto;max-height:520px;object-fit:contain;border-radius:10px;border:1px solid #e7ebf1;background:#f8fafc}
   .hero h2{margin:0 0 8px;font-size:26px;line-height:1.25}
   .hero p{margin:0;color:var(--muted);line-height:1.65;font-size:14px}
   .meta-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
@@ -97,12 +97,16 @@
   .meal-item b{display:block;margin-bottom:6px}
   .api-status{font-size:12px;font-weight:800;margin-top:8px;color:#475467}
   .api-status.error{color:#b42318}
+  .edit-box{background:#fffaf4;border:2px solid #ffd2a6;border-radius:18px;padding:16px;margin-bottom:18px}
+  .edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .meal-edit{min-height:220px;line-height:1.65}
+  @media(max-width:760px){.edit-grid{grid-template-columns:1fr}}
 
   @media (max-width:1100px){
     main{grid-template-columns:1fr}
     .sticky{position:static}
   }
-  @media (max-width:760px){.period-grid{grid-template-columns:1fr}
+  @media (max-width:760px){.period-grid{grid-template-columns:1fr}.thumb-single img,.thumb-five img,.thumb-custom img{max-height:none}.hero-media img{max-height:none}
     .preset-grid{grid-template-columns:1fr}
     .hero{grid-template-columns:1fr}
     .meta-list{grid-template-columns:1fr}
@@ -124,11 +128,11 @@
       <div class="section-title">🧩 기간 설정 + 디자인 프리셋 미리보기</div>
       <div class="notice">
         • 이번 미리보기에서는 <b>프롬프트 구조</b>와 <b>예시 카드 변화</b>를 먼저 점검합니다.<br>
-        • 실제 GitHub 반영 전 단계라서, 나이스 API 연결 대신 <b>디자인 프리셋 선택 흐름</b>을 우선 검토하도록 만들었습니다.<br>
+        • 학교 검색 → 조회 범위 설정 → 중식 불러오기 → 식단 다듬기 순서로 작업합니다.<br>
       </div>
 
       <div class="api-box">
-        <div class="section-title" style="font-size:18px;margin-bottom:10px">🏫 나이스 급식 자동 불러오기</div>
+        <div class="section-title" style="font-size:18px;margin-bottom:10px">🏫 1. 학교 검색</div>
         <div class="section-sub" style="margin-bottom:10px">API 키는 화면에 노출하지 않고 Vercel 환경변수 <b>NEIS_API_KEY</b>에서 서버가 읽습니다.</div>
         <div class="api-grid">
           <div class="field" style="margin:0">
@@ -138,15 +142,10 @@
           <button id="schoolSearchBtn" class="action-btn primary">학교 검색</button>
         </div>
         <div id="schoolResults" class="school-results"></div>
-        <div class="api-actions">
-          <button id="loadMealsBtn" class="action-btn primary">선택 기간 중식 불러오기</button>
-          <button id="clearMealsBtn" class="action-btn secondary">결과 지우기</button>
-        </div>
-        <div id="apiStatus" class="api-status"></div>
-        <div id="mealResults" class="meal-results"></div>
       </div>
 
-      <div class="section-sub">이전 버전처럼 조회 범위와 날짜를 먼저 선택하면, 아래 예시 카드와 프롬프트가 함께 바뀝니다.</div>
+      <div class="section-title" style="font-size:18px;margin-top:6px">📅 2. 조회 범위와 분위기 설정</div>
+      <div class="section-sub">조회 범위와 날짜를 먼저 정하면, 이후 불러오는 식단과 예시 카드가 함께 바뀝니다.</div>
       <div class="period-grid">
         <div class="field">
           <label>조회 범위</label>
@@ -180,6 +179,43 @@
         </div>
       </div>
       <div id="rangeHint" class="range-hint">현재 자료 구성: 하루 게시자료</div>
+
+      <div class="api-box">
+        <div class="section-title" style="font-size:18px;margin-bottom:10px">🍱 3. 선택 기간 중식 불러오기</div>
+        <div class="api-actions">
+          <button id="loadMealsBtn" class="action-btn primary">선택 기간 중식 불러오기</button>
+          <button id="clearMealsBtn" class="action-btn secondary">결과 지우기</button>
+        </div>
+        <div id="apiStatus" class="api-status"></div>
+        <div id="mealResults" class="meal-results"></div>
+      </div>
+
+      <div class="edit-box">
+        <div class="section-title" style="font-size:18px;margin-bottom:10px">✏️ 4. 식단 다듬기</div>
+        <div class="section-sub">나이스에서 불러온 식단을 그대로 사용하거나, 게시 목적에 맞게 제목·부제·핵심 메뉴·안내 문구를 수정하세요.</div>
+        <div class="edit-grid">
+          <div class="field">
+            <label>제목</label>
+            <input id="titleInput" value="오늘의 식단" />
+          </div>
+          <div class="field">
+            <label>부제 / 짧은 카피</label>
+            <input id="subtitleInput" placeholder="예: 특별한 점심시간이 시작됩니다" />
+          </div>
+          <div class="field">
+            <label>대결 메뉴 또는 메인 메뉴</label>
+            <input id="mainMenuInput" placeholder="예: 허브소금삼겹구이 OR 허브고추장삼겹살구이" />
+          </div>
+          <div class="field">
+            <label>하단 안내 문구</label>
+            <input id="footerInput" placeholder="예: 책임있는 선택으로 즐거운 점심시간을 만들어요!" />
+          </div>
+        </div>
+        <div class="field">
+          <label>식단 직접 수정</label>
+          <textarea id="mealEditInput" class="meal-edit" placeholder="나이스 식단을 불러오면 이곳에 날짜별 식단이 자동 입력됩니다. 필요하면 직접 수정하세요."></textarea>
+        </div>
+      </div>
 
       <div class="section-title" style="margin-top:10px">🖼️ 디자인 프리셋 예시 카드</div>
       <div class="section-sub">선택한 기간에 따라 각 카드의 썸네일과 설명이 다르게 보이도록 설계했습니다.</div>
@@ -313,6 +349,11 @@ const rangeRow = document.getElementById('rangeRow');
 const rangeMode = document.getElementById('rangeMode');
 const rangeHint = document.getElementById('rangeHint');
 const moodSelect = document.getElementById('moodSelect');
+const titleInput = document.getElementById('titleInput');
+const subtitleInput = document.getElementById('subtitleInput');
+const mainMenuInput = document.getElementById('mainMenuInput');
+const footerInput = document.getElementById('footerInput');
+const mealEditInput = document.getElementById('mealEditInput');
 const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
 
@@ -435,15 +476,24 @@ function updatePrompt(){
   const modeInfo = getModeInfo(preset);
   const mood = moodSelect.value;
 
-  const mealText = state.loadedMeals.length
+  const editedMealText = mealEditInput.value.trim();
+  const mealText = editedMealText || (state.loadedMeals.length
     ? state.loadedMeals.map(m => {
         const lines = [`[${m.dateLabel}]`, ...m.dishes];
         if(m.nutrition) lines.push(`영양정보: ${m.nutrition}`);
         return lines.join('\n');
       }).join('\n\n')
-    : '[나이스 식단을 아직 불러오지 않았습니다.]';
+    : '[나이스 식단을 아직 불러오지 않았습니다.]');
+
+  const insertInfo = `[삽입 정보]
+제목: ${titleInput.value.trim() || '[제목]'}
+부제: ${subtitleInput.value.trim() || '[짧은 카피]'}
+대결 메뉴 또는 메인 메뉴: ${mainMenuInput.value.trim() || '[식단 정보]'}
+하단 안내 문구: ${footerInput.value.trim() || '[안내 문구]'}`;
 
   promptBox.value = `${modeInfo.prompt}
+
+${insertInfo}
 
 [나이스에서 불러온 실제 식단]
 ${mealText}
@@ -454,7 +504,7 @@ ${mealText}
 [추가 분위기 설정]
 전체 분위기는 "${mood}" 느낌으로 조정한다.
 같은 디자인 프리셋을 유지하되, 배경 색감·조명·장식·학생의 표정과 행동·음식의 연출 정도를 이 분위기에 맞게 미세 조정한다.
-메뉴명, 날짜, 알레르기 번호, 영양정보, 안내 문구는 바꾸거나 생략하지 않는다.`;
+제목, 부제, 메뉴명, 날짜, 알레르기 번호, 영양정보, 안내 문구는 바꾸거나 생략하지 않는다.`;
 }
 
 function updateRangeVisibility(){
@@ -504,6 +554,9 @@ function updateUI(){
 rangeMode.addEventListener('change',()=>{state.mode=rangeMode.value;syncDates();updateUI();});
 [startDate,endDate].forEach(el => el.addEventListener('change',()=>{syncDates();updateUI();}));
 moodSelect.addEventListener('change', updateUI);
+[titleInput,subtitleInput,mainMenuInput,footerInput,mealEditInput].forEach(el=>{
+  el.addEventListener('input', updatePrompt);
+});
 
 
 function ymd(dateStr){ return (dateStr || '').replaceAll('-',''); }
@@ -563,8 +616,22 @@ async function loadMeals(){
     if(!data.meals?.length){ status.textContent='선택 기간에 등록된 중식이 없습니다.'; return; }
     state.loadedMeals = data.meals;
     out.innerHTML=data.meals.map(m=>`<div class="meal-item"><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
+
+    mealEditInput.value = data.meals.map(m=>{
+      const lines = [`[${m.dateLabel}]`, ...m.dishes];
+      if(m.nutrition) lines.push(`영양정보: ${m.nutrition}`);
+      return lines.join('\n');
+    }).join('\n\n');
+
+    if(!mainMenuInput.value.trim()){
+      const first = data.meals[0];
+      if(first && first.dishes && first.dishes.length){
+        mainMenuInput.value = first.dishes[0];
+      }
+    }
+
     updatePrompt();
-    status.textContent=`${data.meals.length}일의 중식을 불러왔습니다. 최종 프롬프트에 반영되었습니다.`;
+    status.textContent=`${data.meals.length}일의 중식을 불러왔습니다. 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
   }catch(e){ status.textContent=e.message; status.className='api-status error'; }
 }
 
@@ -575,6 +642,8 @@ document.getElementById('clearMealsBtn').addEventListener('click',()=>{
   state.loadedMeals=[];
   document.getElementById('mealResults').innerHTML='';
   document.getElementById('apiStatus').textContent='';
+  mealEditInput.value='';
+  mainMenuInput.value='';
   updatePrompt();
 });
 
