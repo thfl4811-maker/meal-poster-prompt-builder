@@ -33,3 +33,18 @@
 ## 주의
 - `NEIS_API_KEY` 값을 HTML이나 GitHub 파일에 직접 넣지 마세요.
 - 이미지 파일 이름이나 `public/presets` 폴더 위치를 바꾸면 사진이 깨질 수 있습니다.
+
+
+## 2026-08-05 배포 오류 수정
+- `vercel.json`의 잘못된 `nodejs20.x` runtime 지정 제거
+- Vercel이 `/api` JavaScript 함수를 자동으로 Node.js Function으로 인식하도록 수정
+- API 파일을 ESM `export default` 형식으로 변경
+- `package.json`에 `"type": "module"`과 Node.js `20.x` 설정 추가
+
+기존 저장소에 아래 파일을 반드시 다시 덮어쓰세요.
+- `vercel.json`
+- `package.json`
+- `api/schools.js`
+- `api/meals.js`
+
+그 후 GitHub에서 Commit changes를 누르면 Vercel이 자동으로 재배포합니다.

@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET 요청만 지원합니다.' });
   const name = String(req.query.name || '').trim();
   if (name.length < 2) return res.status(400).json({ error: '학교명을 두 글자 이상 입력하세요.' });
