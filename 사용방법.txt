@@ -1,0 +1,10 @@
+[미리보기 파일]
+- 로컬에서 디자인 카드만 확인: index.html을 더블클릭
+- 나이스 API 기능까지 확인: 이 폴더 전체를 Vercel에 배포
+
+[Vercel 환경변수]
+Key: NEIS_API_KEY
+Value: 발급받은 나이스 API 키
+Environment: Production and Preview
+
+실제 API 키 값은 이 ZIP에 포함하지 않았습니다.

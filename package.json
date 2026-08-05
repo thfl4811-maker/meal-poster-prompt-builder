@@ -1,9 +1,7 @@
 {
-  "name": "meal-poster-prompt-builder",
+  "name": "meal-poster-preview-complete",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "20.x"
-  }
+  "engines": { "node": "20.x" }
 }
