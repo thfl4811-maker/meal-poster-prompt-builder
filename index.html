@@ -125,7 +125,6 @@
       <div class="notice">
         • 이번 미리보기에서는 <b>프롬프트 구조</b>와 <b>예시 카드 변화</b>를 먼저 점검합니다.<br>
         • 실제 GitHub 반영 전 단계라서, 나이스 API 연결 대신 <b>디자인 프리셋 선택 흐름</b>을 우선 검토하도록 만들었습니다.<br>
-        • 카드 하단에는 항상 <b>김소리T 제공 예시자료</b> 문구가 들어갑니다.
       </div>
 
       <div class="api-box">
@@ -467,7 +466,6 @@ function updateUI(){
   updatePrompt();
 }
 
-});
 rangeMode.addEventListener('change',()=>{state.mode=rangeMode.value;syncDates();updateUI();});
 [startDate,endDate].forEach(el => el.addEventListener('change',()=>{syncDates();updateUI();}));
 
