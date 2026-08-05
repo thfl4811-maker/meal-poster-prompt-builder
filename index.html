@@ -28,11 +28,11 @@
   .section-title{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:900;margin:0 0 14px}
   .section-sub{font-size:13px;color:var(--muted);line-height:1.6;margin:-6px 0 16px}
   .notice{background:#fff8ef;border:1px solid #ffd8b1;border-radius:16px;padding:14px 16px;font-size:13px;line-height:1.6;color:#8a4b00;margin-bottom:18px}
-  .mode-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .mode-switch{display:none}
   .mode-btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:11px 15px;font-weight:800;cursor:pointer;color:#344054}
   .mode-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
-  .range-row{display:none;gap:12px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px}
-  .range-row.active{display:flex}
+  .range-row{display:none}
+  .range-row.active{display:none}.period-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;background:#fff8ef;border:1px solid #ffd8b1;border-radius:16px;padding:15px;margin-bottom:10px}.range-hint{font-size:13px;font-weight:900;color:#8a4b00;background:#fffaf4;border-radius:12px;padding:10px 12px;margin-bottom:18px}
   .range-row .field{flex:1 1 180px}
   .field label{display:block;font-size:13px;font-weight:800;margin-bottom:6px}
   .field input,.field select,textarea{width:100%;border:1px solid #cfd7e3;border-radius:12px;padding:11px 12px;background:#fff;font:inherit}
@@ -60,7 +60,7 @@
   .sticky{position:sticky;top:18px}
   .hero{display:grid;grid-template-columns:210px 1fr;gap:16px;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fafbfd;margin-bottom:16px}
   .hero-media{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff}
-  .hero-media img{display:block;width:100%;height:250px;object-fit:cover}
+  .hero-media img{display:block;width:100%;height:250px;object-fit:contain;background:#f8fafc}
   .hero-media.week,.hero-media.custom{padding:8px;display:grid;gap:6px;background:#fff}
   .hero-media.week{grid-template-columns:repeat(5,1fr)}
   .hero-media.custom{grid-template-columns:repeat(var(--cols,3),1fr)}
@@ -102,7 +102,7 @@
     main{grid-template-columns:1fr}
     .sticky{position:static}
   }
-  @media (max-width:760px){
+  @media (max-width:760px){.period-grid{grid-template-columns:1fr}
     .preset-grid{grid-template-columns:1fr}
     .hero{grid-template-columns:1fr}
     .meta-list{grid-template-columns:1fr}
@@ -114,7 +114,7 @@
 <header>
   <div class="inner">
     <h1>급식 게시자료 프롬프트 생성기 – 미리보기</h1>
-    <p>GitHub 전체 반영 전에 먼저 보는 시안입니다. <b>하루 / 주간 5일 / 직접 기간</b>에 따라 예시 카드가 바뀌고, 선택한 디자인 프리셋에 맞는 프롬프트 초안이 오른쪽에 즉시 바뀌도록 구성했습니다.</p>
+    <p>GitHub 전체 반영 전에 먼저 보는 시안입니다. <b>하루 / 일주일 / 한 달 / 직접 기간</b>에 따라 예시 카드가 바뀌고, 선택한 디자인 프리셋에 맞는 프롬프트 초안이 오른쪽에 즉시 바뀌도록 구성했습니다.</p>
   </div>
 </header>
 
@@ -147,30 +147,27 @@
         <div id="mealResults" class="meal-results"></div>
       </div>
 
-      <div class="section-sub">1) 먼저 게시 범위를 고르면, 2) 아래 예시 카드가 그에 맞게 바뀝니다.</div>
-      <div class="mode-switch">
-        <button class="mode-btn active" data-mode="day">하루 게시자료</button>
-        <button class="mode-btn" data-mode="week">주간 5일 게시자료</button>
-        <button class="mode-btn" data-mode="custom">기간 직접 설정</button>
-      </div>
-
-      <div id="rangeRow" class="range-row">
+      <div class="section-sub">이전 버전처럼 조회 범위와 날짜를 먼저 선택하면, 아래 예시 카드와 프롬프트가 함께 바뀝니다.</div>
+      <div class="period-grid">
         <div class="field">
-          <label>시작 날짜</label>
+          <label>조회 범위</label>
+          <select id="rangeMode">
+            <option value="day">하루</option>
+            <option value="week">일주일(월~금)</option>
+            <option value="month">한 달</option>
+            <option value="custom">직접 기간</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>기준 날짜</label>
           <input id="startDate" type="date" value="2026-07-14" />
         </div>
         <div class="field">
           <label>종료 날짜</label>
           <input id="endDate" type="date" value="2026-07-18" />
         </div>
-        <div class="field">
-          <label>표시 방식</label>
-          <select id="customType">
-            <option value="daily-cards">날짜별 카드 나열</option>
-            <option value="compact-grid">간단 격자형</option>
-          </select>
-        </div>
       </div>
+      <div id="rangeHint" class="range-hint">현재 자료 구성: 하루 게시자료</div>
 
       <div class="section-title" style="margin-top:10px">🖼️ 디자인 프리셋 예시 카드</div>
       <div class="section-sub">선택한 기간에 따라 각 카드의 썸네일과 설명이 다르게 보이도록 설계했습니다.</div>
@@ -192,7 +189,7 @@
       <div class="summary">
         <b>이번 시안에서 확인할 핵심</b>
         <ul>
-          <li>하루 / 주간 / 직접 기간으로 바꾸면 <b>예시 카드도 함께 바뀌는지</b></li>
+          <li>하루 / 일주일 / 한 달 / 직접 기간으로 바꾸면 <b>예시 카드도 함께 바뀌는지</b></li>
           <li>프리셋을 눌렀을 때 <b>오른쪽 프롬프트가 즉시 갱신</b>되는지</li>
           <li>아기자기한 학교마을 디오라마 프롬프트가 기존보다 <b>훨씬 정확한지</b></li>
           <li>화이트 미니멀, 프리미엄 특식, 재료 몰입형 광고 등도 <b>성격이 또렷하게 구분</b>되는지</li>
@@ -208,7 +205,7 @@ const presets = [
   {
     id:'diorama',
     name:'아기자기한 학교마을 디오라마',
-    image:'ghostwriter_images/context/9831f947-3a85-53ce-8845-fa51e53cd517.png',
+    image:'assets/diorama-day.png',weeklyImage:'weekly/diorama-weekly.jpg',
     fit:['일일식단','주간식단','행사식','개학식'],
     descDay:'학교 건물·급식실·정원·학생·음식이 하나의 작은 마을처럼 이어지는 따뜻한 미니어처 디오라마 스타일',
     descWeek:'월~금 5일 식단을 학교마을 곳곳의 게시판, 광장, 급식실 장면으로 나누어 보여주는 주간형 디오라마',
@@ -220,7 +217,7 @@ const presets = [
   {
     id:'blackgold',
     name:'넷플릭스 스타일 블랙골드 영화포스터',
-    image:'오늘의_식단_삼겹살_선택_메뉴.png',
+    image:'assets/blackgold-day.png',weeklyImage:'weekly/blackgold-weekly.jpg',
     fit:['선택급식','대결형','행사성 홍보'],
     descDay:'블랙 배경과 골드·레드 포인트로 메뉴 대결이나 특식 홍보를 영화 포스터처럼 강렬하게 표현',
     descWeek:'이번 주 메뉴 라인업이나 선택급식 시리즈를 블랙골드 무드의 에피소드 포스터처럼 표현',
@@ -232,19 +229,19 @@ const presets = [
   {
     id:'choice-guide',
     name:'선택급식 A/B 설명형',
-    image:'ghostwriter_images/context/f259d414-1a50-54e9-bcf3-487217cad509.png',
+    image:'assets/choice-guide-day.png',weeklyImage:'weekly/choice-guide-weekly.jpg',
     fit:['선택급식','안내문','학생용 설명'],
     descDay:'학생들이 선택급식 참여 방법을 쉽게 이해하도록 A/B 메뉴와 배식 절차를 또렷하게 설명하는 안내형 포스터',
     descWeek:'5일치 선택급식 계획 또는 요일별 선택 항목을 정리해 보여주는 설명형 주간 안내',
     descCustom:'선택한 기간 동안의 선택 메뉴·방법·기억 문구를 한눈에 정리하는 안내형 레이아웃',
-    promptDay:`[디자인 프리셋: 선택급식 A/B 설명형]\n학생들이 선택급식의 구조를 빠르게 이해할 수 있도록 친절하고 명확한 안내형 포스터로 제작한다. 학교 급식실 또는 배식대 장면을 밝고 깔끔하게 보여주고, 상단에는 제목과 핵심 안내 문구를 배치한다.\n\n중간에는 A메뉴와 B메뉴를 균형 있게 비교해 보여주고, 어떤 이름으로 선택하면 되는지 말풍선 또는 강조 박스로 명확하게 넣는다. 하단에는 '내가 미리 선택한 메뉴를 기억하고 배식대에서 그대로 말하면 된다'는 흐름이 바로 이해되도록 단계형으로 정리한다.\n\n문구는 기본 제공하되 교사가 쉽게 수정할 수 있어야 하므로, 문장은 또렷하고 일반적인 표현으로 설정한다.\n\n[기본 문구 예시 - 교사 수정 가능]\n상단: 내일은 자율선택급식!\n설명: 내가 선택한 선호도 조사를 미리 생각하고, 내일 배식대에서 배식받아요.\n안내: 내일 두 메뉴가 있는 배식대에 서면 주저하지 말고 오늘 미리 생각한 선택 메뉴를 골라주세요.\n말풍선 A: 저는 [A메뉴]요\n말풍선 B: 저는 [B메뉴]요\n\n[삽입 정보]\n제목: [제목]\nA메뉴: [A메뉴]\nB메뉴: [B메뉴]\n추가 식단: [공통 식단]\n안내 문구: [교사 수정 문구]`,
+    promptDay:`[디자인 프리셋: 선택급식 A/B 설명형]\n학생들이 선택급식의 구조를 빠르게 이해할 수 있도록 친절하고 명확한 안내형 포스터로 제작한다. 학교 급식실 또는 배식대 장면을 밝고 깔끔하게 보여주고, 상단에는 제목과 핵심 안내 문구를 배치한다.\n\n중간에는 A메뉴와 B메뉴를 균형 있게 비교해 보여주고, 어떤 이름으로 선택하면 되는지 말풍선 또는 강조 박스로 명확하게 넣는다. 하단에는 '내가 미리 선택한 메뉴를 기억하고 배식대에서 그대로 말하면 된다'는 흐름이 바로 이해되도록 단계형으로 정리한다.\n\n문구는 기본 제공하되 교사가 쉽게 수정할 수 있어야 하므로, 문장은 또렷하고 일반적인 표현으로 설정한다.\n\n[기본 문구 예시 - 교사 수정 가능]\n상단: 내일은 자율선택급식!\n설명: 내가 선택한 선호도 조사를 미리 생각하고, 내일 배식대에서 배식받아요.\n안내: 내일 두 메뉴가 있는 배식대에 서면 주저하지 말고 오늘 미리 생각한 선택 메뉴를 골라주세요.\n말풍선 A: 저는 [A메뉴]요\n말풍선 B: 저는 [B메뉴]요\n마무리: 라고 선택한 후 배식받으면 됩니다!\n하단: 책임있는 선택으로 즐거운 점심시간을 만들어요!\n\n[삽입 정보]\n제목: [제목]\nA메뉴: [A메뉴]\nB메뉴: [B메뉴]\n추가 식단: [공통 식단]\n안내 문구: [교사 수정 문구]`,
     promptWeek:`[디자인 프리셋: 선택급식 A/B 설명형 - 주간 5일 버전]\n월~금 5일 동안 어떤 선택급식이 있는지, 각 날짜별 A/B 메뉴가 무엇인지, 학생이 어떻게 기억하고 배식받으면 되는지를 주간 안내형으로 보여준다. 레이아웃은 너무 복잡하지 않게 유지하고, 날짜별로 A/B 메뉴를 작은 카드로 반복 배치한다. 상단에는 선택급식 운영 안내, 중간에는 요일별 메뉴, 하단에는 공통 참여 방법을 넣는다.\n\n[삽입 정보]\n제목: [제목]\n기간: [시작일]~[종료일]\n요일별 A/B 메뉴: [월~금]\n공통 안내 문구: [교사 수정 문구]`,
     promptCustom:`[디자인 프리셋: 선택급식 A/B 설명형 - 기간 지정 버전]\n선택한 기간 동안의 A/B 선택 메뉴를 날짜별 안내 카드로 정리한다. 학생이 이해하기 쉬운 설명형 포스터로 구성하고, 각 날짜마다 어떤 메뉴를 선택하면 되는지 짧고 명확하게 보여준다. 기본 문구는 수정 가능하도록 일반적인 안내문으로 유지한다.\n\n[삽입 정보]\n제목: [제목]\n기간: [시작일]~[종료일]\n날짜별 A/B 메뉴: [기간 식단]\n안내 문구: [교사 수정 문구]`
   },
   {
     id:'white-minimal',
     name:'화이트 미니멀 선택 식단표',
-    image:'7월_10일_오늘의_식단_메뉴판.png',
+    image:'assets/white-minimal-day.png',weeklyImage:'weekly/white-minimal-weekly.jpg',
     fit:['일일식단','주간식단','깔끔한 안내'],
     descDay:'흰 배경과 넉넉한 여백, 또렷한 음식 사진으로 식단을 깔끔하고 단정하게 전달하는 스타일',
     descWeek:'월~금 5일 식단을 표 형태가 아닌 미니멀 카드형으로 정돈하여 보여주는 주간 식단표',
@@ -256,7 +253,7 @@ const presets = [
   {
     id:'premium-special',
     name:'프리미엄 특식',
-    image:'7.15.png',
+    image:'assets/premium-special-day.png',weeklyImage:'weekly/premium-special-weekly.jpg',
     fit:['특식','행사식','레스토랑 분위기'],
     descDay:'호텔 다이닝이나 고급 레스토랑 메뉴판 같은 분위기로 특식의 품격을 살리는 프리미엄 포스터',
     descWeek:'이번 주 특식·행사식을 중심으로 고급스럽게 묶어 보여주는 스페셜 주간 포스터',
@@ -268,7 +265,7 @@ const presets = [
   {
     id:'ingredient-ad',
     name:'재료 몰입형 광고',
-    image:'오렌지주스_선택_급식_인포그래픽.png',
+    image:'assets/ingredient-ad-day.png',weeklyImage:'weekly/ingredient-ad-weekly.jpg',
     fit:['후식/과일','재료 강조','광고형'],
     descDay:'과일·후식·특정 재료를 주인공으로 크게 강조하여 광고처럼 몰입감 있게 보여주는 스타일',
     descWeek:'5일간 과일·후식·간식 라인업을 재료 중심의 비주얼 광고 시리즈로 보여주는 주간형',
@@ -280,7 +277,7 @@ const presets = [
   {
     id:'food-character',
     name:'친근한 푸드 캐릭터',
-    image:'오리훈제_네_장의_행복_포스터.png',
+    image:'assets/food-character-day.png',weeklyImage:'weekly/food-character-weekly.jpg',
     fit:['안내문','사과문','생활지도'],
     descDay:'귀엽고 따뜻한 음식 캐릭터와 말풍선으로 안내문·사과문·캠페인을 부드럽게 전달하는 스타일',
     descWeek:'5일치 캠페인, 위생 안내, 식생활 약속 등을 캐릭터 시리즈 카드로 전개하는 주간 버전',
@@ -301,6 +298,8 @@ const presetGrid = document.getElementById('presetGrid');
 const promptBox = document.getElementById('promptBox');
 const hero = document.getElementById('hero');
 const rangeRow = document.getElementById('rangeRow');
+const rangeMode = document.getElementById('rangeMode');
+const rangeHint = document.getElementById('rangeHint');
 const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
 
@@ -323,11 +322,11 @@ function getModeInfo(preset){
       count:1
     };
   }
-  if(state.mode === 'week'){
+  if(state.mode === 'week' || state.mode === 'month'){
     return {
-      label:'주간 5일 게시자료',
+      label: state.mode === 'month' ? '한 달 게시자료' : '주간 5일 게시자료',
       desc:preset.descWeek,
-      titleSample:'월~금 5일 주간형',
+      titleSample: state.mode === 'month' ? '주차별 요약형' : '월~금 5일 주간형',
       prompt:preset.promptWeek,
       thumbType:'week',
       count:5
@@ -348,20 +347,16 @@ function escapeHtml(str){
 }
 
 function renderThumb(preset, modeInfo, small=false){
-  const imgPath = preset.image;
+  const imgPath = (state.mode === 'week' || state.mode === 'month' || state.mode === 'custom') ? (preset.weeklyImage || preset.image) : preset.image;
   if(modeInfo.thumbType === 'single'){
     return `<div class="thumb thumb-single"><img src="${imgPath}" alt="${preset.name}"></div>`;
   }
   if(modeInfo.thumbType === 'week'){
-    const days = ['월','화','수','목','금'];
-    const cls = small ? 'thumb thumb-five' : 'hero-media week';
-    return `<div class="${cls}">${days.map(d => `<div class="mini"><span class="mini-badge">${d}</span><img src="${imgPath}" alt="${preset.name} ${d}"></div>`).join('')}</div>`;
+    const cls = small ? 'thumb thumb-single' : 'hero-media';
+    return `<div class="${cls}"><img src="${imgPath}" alt="${preset.name} 주간 예시"></div>`;
   }
-  const count = modeInfo.count;
-  const cols = Math.min(count, 4);
-  const items = Array.from({length:count}, (_,i) => `<div class="mini"><span class="mini-badge">DAY ${i+1}</span><img src="${imgPath}" alt="${preset.name} ${i+1}"></div>`).join('');
-  const cls = small ? 'thumb thumb-custom' : 'hero-media custom';
-  return `<div class="${cls}" style="--cols:${cols}">${items}</div>`;
+  const cls = small ? 'thumb thumb-single' : 'hero-media';
+  return `<div class="${cls}"><img src="${imgPath}" alt="${preset.name} 기간 예시"></div>`;
 }
 
 function renderPresets(){
@@ -428,13 +423,40 @@ function updatePrompt(){
 }
 
 function updateRangeVisibility(){
-  rangeRow.classList.toggle('active', state.mode === 'custom');
+  endDate.disabled = state.mode === 'day';
+  if(state.mode === 'day') endDate.value = startDate.value;
+  rangeHint.textContent =
+    state.mode === 'day' ? '현재 자료 구성: 하루 게시자료' :
+    state.mode === 'week' ? '현재 자료 구성: 일주일 · 월~금 5일 게시자료' :
+    state.mode === 'month' ? '현재 자료 구성: 한 달 · 주차별 요약 자료' :
+    `현재 자료 구성: 직접 기간 · ${dayDiffInclusive(startDate.value,endDate.value)}일치`;
 }
 
 function updateModeButtons(){
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mode === state.mode);
-  });
+  rangeMode.value = state.mode;
+}
+
+function syncDates(){
+  const base = new Date(startDate.value + 'T00:00:00');
+  if(isNaN(base)) return;
+  const end = new Date(base);
+  if(state.mode === 'day'){
+    endDate.value = startDate.value;
+  }else if(state.mode === 'week'){
+    const day = base.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(base);
+    monday.setDate(base.getDate() + mondayOffset);
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    startDate.value = monday.toISOString().slice(0,10);
+    endDate.value = friday.toISOString().slice(0,10);
+  }else if(state.mode === 'month'){
+    const first = new Date(base.getFullYear(), base.getMonth(), 1);
+    const last = new Date(base.getFullYear(), base.getMonth()+1, 0);
+    startDate.value = first.toISOString().slice(0,10);
+    endDate.value = last.toISOString().slice(0,10);
+  }
 }
 
 function updateUI(){
@@ -445,14 +467,9 @@ function updateUI(){
   updatePrompt();
 }
 
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    state.mode = btn.dataset.mode;
-    updateUI();
-  });
 });
-[startDate,endDate].forEach(el => el.addEventListener('change', updateUI));
-document.getElementById('customType').addEventListener('change', updateUI);
+rangeMode.addEventListener('change',()=>{state.mode=rangeMode.value;syncDates();updateUI();});
+[startDate,endDate].forEach(el => el.addEventListener('change',()=>{syncDates();updateUI();}));
 
 
 function ymd(dateStr){ return (dateStr || '').replaceAll('-',''); }
