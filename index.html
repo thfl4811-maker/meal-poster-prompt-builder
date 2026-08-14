@@ -235,7 +235,8 @@
         </div>
         <div class="field">
           <label>식단 직접 수정</label>
-          <textarea id="mealEditInput" class="meal-edit" placeholder="나이스 식단을 불러오면 이곳에 날짜별 식단이 자동 입력됩니다. 필요하면 직접 수정하세요."></textarea>
+          <textarea id="mealEditInput" class="meal-edit" placeholder="나이스 식단을 불러오면 이곳에 날짜별 식단이 자동 입력됩니다. 필요하면 직접 수정하세요.
+유치원 등 검색이 안 되는 기관은 식단을 여기에 직접 붙여넣으면 똑같이 사용할 수 있어요."></textarea>
         </div>
         <div class="field">
           <label>제거할 단어 / 수정할 문구</label>
@@ -1181,7 +1182,14 @@ async function searchSchools(){
     const res=await fetch('/api/schools?query='+encodeURIComponent(query));
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'학교 검색 실패');
-    if(!data.schools?.length){ status.textContent='검색 결과가 없습니다.'; return; }
+    if(!data.schools?.length){
+      if(query.includes('유치원')){
+        status.innerHTML='🧒 유치원은 나이스 개방 API에서 제공되지 않아 검색이 안 돼요.<br>학교 검색 없이 <b>④ 식단 다듬기 → 식단 직접 수정</b> 칸에 유치원 식단을 붙여넣으면 프롬프트가 똑같이 만들어집니다.';
+      }else{
+        status.textContent='검색 결과가 없습니다.';
+      }
+      return;
+    }
     box.innerHTML=data.schools.map((s,i)=>`<div class="school-item" data-index="${i}"><b>${s.name}</b><span>${s.region} · ${s.address||''}</span></div>`).join('');
     box.querySelectorAll('.school-item').forEach(el=>el.addEventListener('click',()=>{
       const school = data.schools[Number(el.dataset.index)];
