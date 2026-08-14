@@ -228,6 +228,10 @@
             <label>하단 안내 문구</label>
             <input id="footerInput" placeholder="예: 책임있는 선택으로 즐거운 점심시간을 만들어요!" />
           </div>
+          <div class="field">
+            <label>미급식일 표시 문구 (5일용)</label>
+            <input id="noMealInput" value="오늘은 미급식일 입니다" placeholder="예: 오늘은 미급식일 입니다 / 개교기념일 안내 등" />
+          </div>
         </div>
         <div class="field">
           <label>식단 직접 수정</label>
@@ -698,6 +702,7 @@ const subtitleInput = document.getElementById('subtitleInput');
 const mainMenuInput = document.getElementById('mainMenuInput');
 const footerInput = document.getElementById('footerInput');
 const mealEditInput = document.getElementById('mealEditInput');
+const noMealInput = document.getElementById('noMealInput');
 const cleanupRulesInput = document.getElementById('cleanupRulesInput');
 const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
@@ -860,6 +865,46 @@ function buildMealTextFromLoadedMeals(meals){
     return lines.join('\n');
   }).join('\n\n');
 }
+function weekdayKo(d){ return '일월화수목금토'[d.getDay()]; }
+// 식단 텍스트에서 첫 날짜 블록의 메뉴 목록을 추출 (하루용 식판 구성 규칙에 사용)
+function parseFirstDayDishes(text){
+  const lines = (text || '').split('\n');
+  const out = []; let started = false;
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line){ if(started) break; continue; }
+    if(/^\[.*\]$/.test(line)){ if(started) break; started = true; continue; }
+    if(!started) continue;
+    if(/^영양정보/.test(line)) continue;
+    out.push(line);
+  }
+  return out;
+}
+function getNoMealPhrase(){ return (noMealInput && noMealInput.value.trim()) || '오늘은 미급식일 입니다'; }
+// 5일 모드: 조회 기간의 평일(월~금) 중 급식이 없는 날을 미급식일 항목으로 채워서 5칸이 항상 유지되게 한다.
+function mergeNoMealDays(meals){
+  const list = (meals || []).slice();
+  if(state.mode === 'day') return list;
+  const s = new Date(startDate.value + 'T00:00:00');
+  const e = new Date((endDate.value || startDate.value) + 'T00:00:00');
+  if(isNaN(s) || isNaN(e) || e < s) return list;
+  const have = new Set(list.map(m => String(m.date)));
+  const phrase = getNoMealPhrase();
+  for(let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)){
+    const dow = d.getDay();
+    if(dow === 0 || dow === 6) continue; // 주말 제외
+    const key = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    if(have.has(key)) continue;
+    list.push({
+      date: key,
+      dateLabel: `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${weekdayKo(d)}요일) - 미급식일`,
+      dishes: [phrase],
+      nutrition: '',
+      isNoMeal: true
+    });
+  }
+  return list.sort((a,b) => String(a.date).localeCompare(String(b.date)));
+}
 function refillMealEditor(useCurrentRules=true){
   const source = state.rawMealText || buildMealTextFromLoadedMeals(state.loadedMeals);
   mealEditInput.value = useCurrentRules ? applyCleanupRulesToText(source) : source;
@@ -910,9 +955,47 @@ function updatePrompt(){
 게시 범위: ${state.mode === 'day' ? '하루' : '5일'}
 조회 날짜: ${startDate.value}${endDate.value ? ' ~ ' + endDate.value : ''}`;
 
+  // 하루 모드: 그날 식단의 모든 메뉴가 식판 사진에 빠짐없이 담기도록 강제 (일부 메뉴 누락 방지)
+  let dayEnforce = '';
+  if(state.mode === 'day'){
+    const dishes = parseFirstDayDishes(mealText);
+    if(dishes.length){
+      const names = dishes.map(x => x.replace(/\s*\([\d.\s]+\)\s*/g,' ').replace(/\s{2,}/g,' ').trim()).filter(Boolean);
+      dayEnforce = `
+
+[식판 사진 필수 규칙 - 반드시 지킬 것]
+이 게시자료에는 그날의 식단이 실제로 담긴 식판(또는 프리셋이 지정한 그릇·플레이팅) 사진이 반드시 포함되어야 한다.
+이날의 식단은 ${names.join(', ')} — 총 ${names.length}가지로 구성된다.
+식판 사진에는 위 ${names.length}가지 메뉴가 하나도 빠짐없이 모두 실제로 담겨 보여야 한다. 일부 메뉴만 그리거나, 목록에 없는 다른 음식으로 대체하거나, 형태를 알아볼 수 없게 뭉뚱그리면 잘못된 결과이므로 다시 구성한다.
+식판 사진은 잘리거나 겹치거나 왜곡되지 않은 완전한 형태로, 음식의 질감과 색이 선명하게 보이도록 고품질로 표현한다. 각 음식의 생김새는 실제 그 요리의 모습과 일치해야 한다.
+화면의 식단 목록 텍스트에는 위 메뉴명을 알레르기 번호까지 포함해 정확히 표기한다.`;
+    }
+  }
+
+  // 5일 모드: 요일 칸 개수·미급식일 표기를 강제하는 지시문 (식판이 일부만 그려지는 문제 방지)
+  let weekEnforce = '';
+  if(state.mode !== 'day'){
+    const merged = mergeNoMealDays(state.loadedMeals);
+    if(merged.length){
+      const dayNames = merged.map(m => {
+        const s = String(m.date);
+        const d = new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T00:00:00`);
+        return isNaN(d) ? '' : weekdayKo(d);
+      }).filter(Boolean);
+      const noMealDays = merged.filter(m => m.isNoMeal);
+      weekEnforce = `
+
+[요일 칸 필수 규칙 - 반드시 지킬 것]
+이 자료는 ${dayNames.map(n=>n+'요일').join(', ')} 총 ${merged.length}개 요일로 구성된다.
+요일 칸(행/썸네일)은 반드시 ${merged.length}개가 전부 보여야 한다. 요일 칸이 ${merged.length}개 미만이면 잘못된 결과이므로 다시 구성한다.
+급식이 있는 요일에는 각 칸마다 그날의 식판(또는 장면) 사진이 하나씩 온전하게, 잘리거나 겹치지 않게 표현되어야 한다.${noMealDays.length?`
+급식이 없는 날(${noMealDays.map(m=>m.dateLabel).join(' / ')})의 칸에는 식판 사진 대신 "${getNoMealPhrase()}" 문구를 그 칸 중앙에 크고 또렷하게 표기한다. 이 칸을 비우거나 건너뛰거나 다른 요일로 대체하지 않는다.`:''}`;
+    }
+  }
+
   promptBox.value = `${settingsInfo}
 
-${modeInfo.prompt}
+${modeInfo.prompt}${dayEnforce}${weekEnforce}
 
 ${insertInfo}
 
@@ -980,6 +1063,15 @@ sizeSelect.addEventListener('change', updateUI);
   el.addEventListener('input', updatePrompt);
 });
 cleanupRulesInput.addEventListener('input', updatePrompt);
+noMealInput.addEventListener('input', ()=>{
+  // 문구를 바꾸면 이미 불러온 5일 식단의 미급식일 항목에도 즉시 반영
+  if(state.mode !== 'day' && (state.loadedMeals.length || state.rawMealText)){
+    state.rawMealText = buildMealTextFromLoadedMeals(mergeNoMealDays(state.loadedMeals));
+    refillMealEditor(true);
+  }else{
+    updatePrompt();
+  }
+});
 document.getElementById('applyCleanupBtn').addEventListener('click',()=>{
   if(state.rawMealText){
     refillMealEditor(true);
@@ -1022,7 +1114,7 @@ copyPromptBtn.addEventListener('click', async ()=>{
 
 
 function ymd(dateStr){ return (dateStr || '').replaceAll('-',''); }
-function formatDateInput(d){ return d.toISOString().slice(0,10); }
+function formatDateInput(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function mondayToFriday(base=new Date()){
   const day=base.getDay();
   const diff=day===0?-6:1-day;
@@ -1115,22 +1207,24 @@ async function loadMeals(){
     const res=await fetch('/api/meals?'+qs.toString());
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'급식 조회 실패');
-    if(!data.meals?.length){ status.textContent='선택 기간에 등록된 중식이 없습니다.'; return; }
-    state.loadedMeals = data.meals;
-    state.rawMealText = buildMealTextFromLoadedMeals(data.meals);
-    out.innerHTML=data.meals.map(m=>`<div class="meal-item"><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
+    if(!data.meals?.length && state.mode==='day'){ status.textContent='선택 기간에 등록된 중식이 없습니다.'; return; }
+    state.loadedMeals = data.meals || [];
+    const merged = mergeNoMealDays(state.loadedMeals);
+    state.rawMealText = buildMealTextFromLoadedMeals(merged);
+    out.innerHTML=merged.map(m=>`<div class="meal-item"${m.isNoMeal?' style="opacity:.65"':''}><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
 
     mealEditInput.value = state.rawMealText;
 
     if(!mainMenuInput.value.trim()){
-      const first = data.meals[0];
+      const first = state.loadedMeals[0];
       if(first && first.dishes && first.dishes.length){
         mainMenuInput.value = first.dishes[0];
       }
     }
 
     updatePrompt();
-    status.textContent=`${data.meals.length}일의 중식을 불러왔습니다. 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
+    const noMealCount = merged.filter(m=>m.isNoMeal).length;
+    status.textContent=`${state.loadedMeals.length}일의 중식을 불러왔습니다.${noMealCount?` 급식 없는 평일 ${noMealCount}일은 미급식일 문구로 채웠습니다.`:''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
   }catch(e){ status.textContent=e.message; status.className='api-status error'; }
 }
 
