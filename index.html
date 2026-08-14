@@ -1202,14 +1202,17 @@ async function searchSchools(){
     const res=await fetch('/api/schools?query='+encodeURIComponent(query));
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'학교 검색 실패');
-    if(!data.schools?.length){
-      if(query.includes('유치원')){
-        status.innerHTML='🧒 유치원은 나이스 개방 API에서 제공되지 않아 검색이 안 돼요.<br>학교 검색 없이 <b>④ 식단 다듬기 → 식단 직접 수정</b> 칸에 유치원 식단을 붙여넣으면 프롬프트가 똑같이 만들어집니다.';
-      }else{
-        status.textContent='검색 결과가 없습니다.';
-      }
+    // 유치원은 나이스 개방 API 미제공 — 이름에 유치원이 들어간 예외 항목(병설유치원 등)은 식단 데이터가 없어 목록에서 제외
+    const schoolRows = (data.schools||[]).filter(s => !String(s.name||'').includes('유치원'));
+    if(query.includes('유치원')){
+      status.innerHTML='🧒 유치원은 나이스 개방 API에서 제공되지 않아 검색이 안 돼요.<br>학교 검색 없이 <b>④ 식단 다듬기 → 식단 직접 수정</b> 칸에 유치원 식단을 붙여넣으면 프롬프트가 똑같이 만들어집니다.';
       return;
     }
+    if(!schoolRows.length){
+      status.textContent='검색 결과가 없습니다.';
+      return;
+    }
+    data.schools = schoolRows;
     box.innerHTML=data.schools.map((s,i)=>`<div class="school-item" data-index="${i}"><b>${s.name}</b><span>${s.region} · ${s.address||''}</span></div>`).join('');
     box.querySelectorAll('.school-item').forEach(el=>el.addEventListener('click',()=>{
       const school = data.schools[Number(el.dataset.index)];
