@@ -168,7 +168,19 @@
             <button id="excelBtn" class="action-btn secondary" type="button">📄 나이스 월간식단표 엑셀 업로드</button>
             <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none">
           </div>
+          <div id="excelBadge" class="status" style="display:none;margin-top:6px;color:#047857;font-weight:800"></div>
           <div class="status" style="margin-top:6px">유치원 선생님 전용 또는 학교 검색이 안 되는 학교의 경우, 나이스에서 <b>월간식단표를 엑셀로 다운받아 업로드</b>해 주세요. 학교 검색 없이 조회 범위에 맞는 식단이 자동으로 입력됩니다.</div>
+          <details style="margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden">
+            <summary style="cursor:pointer;padding:10px 14px;font-weight:800;font-size:13.5px;color:#047857;list-style-position:inside">🧒 유치원 선생님 이용 안내 (누르면 펼쳐져요)</summary>
+            <div style="padding:4px 16px 14px;font-size:13px;line-height:1.8;color:#3f3f46">
+              <p style="margin:8px 0">교육부의 공개 자료(나이스 개방포털)에 유치원 급식 정보가 포함되어 있지 않아, 유치원은 학교 이름 검색이 되지 않습니다. 이는 프로그램 오류가 아닌 교육부 정책에 따른 것입니다. 대신 아래 방법으로 초·중·고와 동일하게 이용하실 수 있습니다.</p>
+              <p style="margin:8px 0;font-weight:800;color:#111113">이용 방법</p>
+              <p style="margin:6px 0">① 유치원 나이스(급식 메뉴)에서 <b>월간식단표를 엑셀 파일로 저장</b>합니다.</p>
+              <p style="margin:6px 0">② 이 화면의 <b>「📄 나이스 월간식단표 엑셀 업로드」</b> 버튼을 누르고 저장한 파일을 선택합니다.</p>
+              <p style="margin:6px 0">③ 버튼 아래 <b>「✅ 업로드 완료」</b> 표시를 확인합니다. 날짜는 자동으로 맞춰지며, 다른 날짜·주가 필요하면 <b>기준 날짜와 종료 날짜만 바꾸면</b> 그 기간의 식단이 바로 적용됩니다.</p>
+              <p style="margin:6px 0">④ 이후 디자인 프리셋 선택과 프롬프트 복사는 초·중·고와 완전히 동일합니다. (하루용·5일용 모두 사용 가능하며, 급식 없는 날은 "미급식일" 문구로 자동 표시됩니다.)</p>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -1086,9 +1098,9 @@ function updateUI(){
 }
 
 rangeMode.addEventListener('change',()=>{state.mode=rangeMode.value;syncDates();updateUI();});
-document.getElementById('presetTabDay').addEventListener('click',()=>{state.mode='day';syncDates();updateUI();});
-document.getElementById('presetTabWeek').addEventListener('click',()=>{state.mode='custom';syncDates();updateUI();});
-[startDate,endDate].forEach(el => el.addEventListener('change',()=>{syncDates();updateUI();}));
+document.getElementById('presetTabDay').addEventListener('click',()=>{state.mode='day';syncDates();updateUI();if(state.excel)applyExcelRange(false);});
+document.getElementById('presetTabWeek').addEventListener('click',()=>{state.mode='custom';syncDates();updateUI();if(state.excel)applyExcelRange(false);});
+[startDate,endDate].forEach(el => el.addEventListener('change',()=>{syncDates();updateUI();if(state.excel)applyExcelRange(false);}));
 sizeSelect.addEventListener('change', updateUI);
 [titleInput,subtitleInput,mainMenuInput,footerInput,mealEditInput].forEach(el=>{
   el.addEventListener('input', updatePrompt);
@@ -1235,7 +1247,10 @@ async function searchSchools(){
 async function loadMeals(){
   const status=document.getElementById('apiStatus');
   const out=document.getElementById('mealResults');
-  if(!state.selectedSchool){ status.textContent='먼저 학교를 검색해 선택하세요.'; status.className='api-status error'; return; }
+  if(!state.selectedSchool){
+    if(state.excel){ applyExcelRange(true); return; }
+    status.textContent='먼저 학교를 검색해 선택하거나, 유치원 등 검색이 안 되는 기관은 위의 📄 엑셀 업로드를 이용하세요.'; status.className='api-status error'; return;
+  }
   syncApiDates();
   status.textContent='중식 정보를 불러오고 있습니다…'; status.className='api-status'; out.innerHTML='';
   try{
@@ -1304,36 +1319,60 @@ function parseMonthlyExcel(book){
   meals.sort((a,b)=>a.date.localeCompare(b.date));
   return {meals,orgName,year,mon};
 }
-async function loadExcelMeals(file){
+function updateExcelBadge(){
+  const badge=document.getElementById('excelBadge');
+  if(!badge)return;
+  if(state.excel){
+    const x=state.excel;
+    badge.style.display='block';
+    badge.textContent=`✅ 업로드 완료: ${x.orgName?x.orgName+' ':''}${x.year}년 ${Number(x.mon)}월 식단 ${x.meals.length}일치 — 아래에서 기준·종료 날짜를 바꾸면 그 기간의 식단이 자동으로 적용됩니다.`;
+  }else{
+    badge.style.display='none';
+    badge.textContent='';
+  }
+}
+// 업로드된 엑셀에서 현재 조회 범위(기준~종료 날짜)에 맞는 식단을 잘라 적용
+function applyExcelRange(autoAdjust){
+  if(!state.excel)return;
   const status=document.getElementById('apiStatus');
   const out=document.getElementById('mealResults');
+  const {meals,orgName,year,mon}=state.excel;
+  syncApiDates();
+  let from=ymd(startDate.value),to=ymd(endDate.value||startDate.value);
+  let sel=meals.filter(m=>m.date>=from&&m.date<=to);
+  let adjusted=false;
+  if(!sel.length&&autoAdjust){
+    // 선택한 날짜에 식단이 없으면 엑셀의 첫 날짜로 자동 조정
+    const first=meals[0].date;
+    const fd=`${first.slice(0,4)}-${first.slice(4,6)}-${first.slice(6,8)}`;
+    if(state.mode==='day'){startDate.value=fd;endDate.value=fd;}
+    else{const [ms,fr]=mondayToFriday(new Date(fd+'T00:00:00'));startDate.value=ms;endDate.value=fr;}
+    from=ymd(startDate.value);to=ymd(endDate.value);
+    sel=meals.filter(m=>m.date>=from&&m.date<=to);
+    adjusted=true;
+  }
+  if(!sel.length){
+    status.className='api-status error';
+    status.textContent=`선택한 기간에 업로드한 엑셀(${year}년 ${Number(mon)}월) 식단이 없어요. 날짜를 ${Number(mon)}월로 맞춰주세요.`;
+    return;
+  }
+  state.loadedMeals=sel;
+  const merged=mergeNoMealDays(sel);
+  state.rawMealText=buildMealTextFromLoadedMeals(merged);
+  out.innerHTML=merged.map(m=>`<div class="meal-item"${m.isNoMeal?' style="opacity:.65"':''}><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
+  mealEditInput.value=state.rawMealText;
+  if(!mainMenuInput.value.trim()&&sel[0]?.dishes?.length)mainMenuInput.value=sel[0].dishes[0];
+  updatePrompt();
+  status.className='api-status';
+  status.textContent=`📄 ${orgName?orgName+' ':''}${year}년 ${Number(mon)}월 식단 중 조회 범위의 ${sel.length}일을 적용했어요.${adjusted?' (선택한 날짜에 식단이 없어 엑셀의 첫 날짜로 자동 조정했어요.)':''}`;
+}
+async function loadExcelMeals(file){
+  const status=document.getElementById('apiStatus');
   if(typeof XLSX==='undefined'){status.textContent='엑셀 기능을 불러오지 못했어요. 인터넷 연결을 확인하고 페이지를 새로고침해 주세요.';status.className='api-status error';return;}
   try{
-    const {meals,orgName,year,mon}=parseMonthlyExcel(XLSX.read(await file.arrayBuffer(),{type:'array'}));
-    syncApiDates();
-    let from=ymd(startDate.value),to=ymd(endDate.value||startDate.value);
-    let sel=meals.filter(m=>m.date>=from&&m.date<=to);
-    let adjusted=false;
-    if(!sel.length){
-      // 선택한 날짜에 식단이 없으면 엑셀의 첫 날짜로 자동 조정
-      const first=meals[0].date;
-      const fd=`${first.slice(0,4)}-${first.slice(4,6)}-${first.slice(6,8)}`;
-      startDate.value=fd;
-      if(state.mode==='day'){endDate.value=fd;}
-      else{const base=new Date(fd+'T00:00:00');const end=new Date(base);end.setDate(base.getDate()+4);endDate.value=formatDateInput(end);}
-      from=ymd(startDate.value);to=ymd(endDate.value);
-      sel=meals.filter(m=>m.date>=from&&m.date<=to);
-      adjusted=true;
-    }
-    state.loadedMeals=sel;
-    const merged=mergeNoMealDays(sel);
-    state.rawMealText=buildMealTextFromLoadedMeals(merged);
-    out.innerHTML=merged.map(m=>`<div class="meal-item"${m.isNoMeal?' style="opacity:.65"':''}><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
-    mealEditInput.value=state.rawMealText;
-    if(!mainMenuInput.value.trim()&&sel[0]?.dishes?.length)mainMenuInput.value=sel[0].dishes[0];
-    updatePrompt();
-    status.className='api-status';
-    status.textContent=`📄 ${orgName?orgName+' ':''}${year}년 ${Number(mon)}월 식단 ${meals.length}일 중 조회 범위의 ${sel.length}일을 불러왔어요.${adjusted?' (선택한 날짜에 식단이 없어 엑셀의 첫 날짜로 자동 조정했어요.)':''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
+    state.excel=parseMonthlyExcel(XLSX.read(await file.arrayBuffer(),{type:'array'}));
+    updateExcelBadge();
+    applyExcelRange(true);
   }catch(e){status.textContent='엑셀 업로드 실패: '+e.message;status.className='api-status error';}
 }
 document.getElementById('excelBtn').addEventListener('click',()=>document.getElementById('excelFile').click());
@@ -1359,6 +1398,8 @@ renderRecentSchools();
 document.getElementById('loadMealsBtn').addEventListener('click',loadMeals);
 document.getElementById('clearMealsBtn').addEventListener('click',()=>{
   state.loadedMeals=[];
+  state.excel=null;
+  updateExcelBadge();
   document.getElementById('mealResults').innerHTML='';
   document.getElementById('apiStatus').textContent='';
   mealEditInput.value='';
