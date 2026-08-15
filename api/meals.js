@@ -20,6 +20,8 @@ export default async function handler(req, res) {
     const schoolCode = String(req.query.schoolCode || '').trim();
     const from = String(req.query.from || '').replace(/\D/g, '');
     const to = String(req.query.to || '').replace(/\D/g, '');
+    const mealRaw = String(req.query.meal || '2');
+    const meal = /^[123]$/.test(mealRaw) ? mealRaw : '2';
 
     if (!atptCode || !schoolCode || !/^\d{8}$/.test(from) || !/^\d{8}$/.test(to)) {
       return res.status(400).json({ error: '학교와 조회 날짜를 정확히 입력하세요.' });
@@ -37,7 +39,7 @@ export default async function handler(req, res) {
       SD_SCHUL_CODE: schoolCode,
       MLSV_FROM_YMD: from,
       MLSV_TO_YMD: to,
-      MMEAL_SC_CODE: '2'
+      MMEAL_SC_CODE: meal
     });
 
     const response = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?${params.toString()}`);
