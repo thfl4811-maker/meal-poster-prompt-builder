@@ -137,7 +137,7 @@
   <div class="inner">
     <div class="dev-credit">개발자: 영양교사 김소리</div>
     <h1>급식 게시자료 프롬프트 생성기</h1>
-    <p>학교 검색 → 조회 범위 설정 → 중식 불러오기 → 식단 다듬기 순서로 원하는 디자인 프리셋의 AI 이미지 생성 프롬프트를 만듭니다.</p>
+    <p>학교 검색 → 조회 범위 설정 → 급식 불러오기(조식·중식·석식) → 식단 다듬기 순서로 원하는 디자인 프리셋의 AI 이미지 생성 프롬프트를 만듭니다.</p>
   </div>
 </header>
 
@@ -146,7 +146,7 @@
     <div class="panel-inner">
       <div class="section-title">🧩 기간 설정 + 디자인 프리셋</div>
       <div class="notice">
-        • 학교 검색 → 조회 범위 설정 → 중식 불러오기 → 식단 다듬기 순서로 작업하세요.<br>
+        • 학교 검색 → 조회 범위 설정 → 급식 불러오기 → 식단 다듬기 순서로 작업하세요.<br>
       </div>
 
       <div class="api-box">
@@ -203,6 +203,14 @@
           <input id="endDate" type="date" value="2026-07-18" />
         </div>
         <div class="field">
+          <label>식사 구분</label>
+          <select id="mealType" title="조식·석식은 해당 급식을 나이스에 등록한 학교만 데이터가 있어요">
+            <option value="2">중식</option>
+            <option value="1">조식</option>
+            <option value="3">석식</option>
+          </select>
+        </div>
+        <div class="field">
           <label>디자인 사이즈</label>
           <select id="sizeSelect">
             <option value="kiosk_9_16">키오스크 세로형 9:16 (1080×1920)</option>
@@ -221,9 +229,9 @@
       <div id="rangeHint" class="range-hint">현재 자료 구성: 하루 게시자료</div>
 
       <div class="api-box">
-        <div class="section-title" style="font-size:18px;margin-bottom:10px">🍱 3. 선택 기간 중식 불러오기</div>
+        <div class="section-title" style="font-size:18px;margin-bottom:10px">🍱 3. 선택 기간 급식 불러오기</div>
         <div class="api-actions">
-          <button id="loadMealsBtn" class="action-btn primary">선택 기간 중식 불러오기</button>
+          <button id="loadMealsBtn" class="action-btn primary">선택 기간 급식 불러오기</button>
           <button id="clearMealsBtn" class="action-btn secondary">결과 지우기</button>
         </div>
         <div id="apiStatus" class="api-status"></div>
@@ -729,6 +737,12 @@ const noMealInput = document.getElementById('noMealInput');
 const cleanupRulesInput = document.getElementById('cleanupRulesInput');
 const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
+const mealTypeSel = document.getElementById('mealType');
+if (mealTypeSel) {
+  const savedMeal = localStorage.getItem('poster_meal_code');
+  if (savedMeal && ['1','2','3'].includes(savedMeal)) mealTypeSel.value = savedMeal;
+  mealTypeSel.addEventListener('change', () => localStorage.setItem('poster_meal_code', mealTypeSel.value));
+}
 
 function dayDiffInclusive(start, end){
   const s = new Date(start + 'T00:00:00');
@@ -1252,18 +1266,22 @@ async function loadMeals(){
     status.textContent='먼저 학교를 검색해 선택하거나, 유치원 등 검색이 안 되는 기관은 위의 📄 엑셀 업로드를 이용하세요.'; status.className='api-status error'; return;
   }
   syncApiDates();
-  status.textContent='중식 정보를 불러오고 있습니다…'; status.className='api-status'; out.innerHTML='';
+  const mealSel=document.getElementById('mealType');
+  const mealCode=mealSel?mealSel.value:'2';
+  const mealLabel={'1':'조식','2':'중식','3':'석식'}[mealCode]||'중식';
+  status.textContent=`${mealLabel} 정보를 불러오고 있습니다…`; status.className='api-status'; out.innerHTML='';
   try{
     const qs=new URLSearchParams({
       atptCode:state.selectedSchool.atptCode,
       schoolCode:state.selectedSchool.schoolCode,
       from:ymd(startDate.value),
-      to:ymd(endDate.value)
+      to:ymd(endDate.value),
+      meal:mealCode
     });
     const res=await fetch('/api/meals?'+qs.toString());
     const data=await res.json();
     if(!res.ok) throw new Error(data.error||'급식 조회 실패');
-    if(!data.meals?.length && state.mode==='day'){ status.textContent='선택 기간에 등록된 중식이 없습니다.'; return; }
+    if(!data.meals?.length && state.mode==='day'){ status.textContent=`선택 기간에 등록된 ${mealLabel}이 없습니다.${mealCode!=='2'?' (조식·석식은 나이스에 등록한 학교만 조회돼요)':''}`; return; }
     state.loadedMeals = data.meals || [];
     const merged = mergeNoMealDays(state.loadedMeals);
     state.rawMealText = buildMealTextFromLoadedMeals(merged);
@@ -1280,7 +1298,7 @@ async function loadMeals(){
 
     updatePrompt();
     const noMealCount = merged.filter(m=>m.isNoMeal).length;
-    status.textContent=`${state.loadedMeals.length}일의 중식을 불러왔습니다.${noMealCount?` 급식 없는 평일 ${noMealCount}일은 미급식일 문구로 채웠습니다.`:''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
+    status.textContent=`${state.loadedMeals.length}일의 ${mealLabel}을 불러왔습니다.${noMealCount?` 급식 없는 평일 ${noMealCount}일은 미급식일 문구로 채웠습니다.`:''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
   }catch(e){ status.textContent=e.message; status.className='api-status error'; }
 }
 
