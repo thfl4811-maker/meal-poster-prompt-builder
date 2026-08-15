@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>급식 게시자료 프롬프트 생성기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#f7f7f8;
@@ -160,6 +161,15 @@
         </div>
         <div id="recentSchools" class="recent-schools"></div>
         <div id="schoolResults" class="school-results"></div>
+        <div style="border-top:1px dashed var(--line);margin:14px 0 10px"></div>
+        <div class="field" style="margin:0">
+          <label>🧒 유치원 선생님 전용 · 학교 검색이 안 되는 기관</label>
+          <div class="api-actions" style="margin-top:6px">
+            <button id="excelBtn" class="action-btn secondary" type="button">📄 나이스 월간식단표 엑셀 업로드</button>
+            <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none">
+          </div>
+          <div class="status" style="margin-top:6px">유치원 선생님 전용 또는 학교 검색이 안 되는 학교의 경우, 나이스에서 <b>월간식단표를 엑셀로 다운받아 업로드</b>해 주세요. 학교 검색 없이 조회 범위에 맞는 식단이 자동으로 입력됩니다.</div>
+        </div>
       </div>
 
       <div class="section-title" style="font-size:18px;margin-top:6px">📅 2. 조회 범위 설정</div>
@@ -1205,7 +1215,7 @@ async function searchSchools(){
     // 유치원은 나이스 개방 API 미제공 — 이름에 유치원이 들어간 예외 항목(병설유치원 등)은 식단 데이터가 없어 목록에서 제외
     const schoolRows = (data.schools||[]).filter(s => !String(s.name||'').includes('유치원'));
     if(query.includes('유치원')){
-      status.innerHTML='🧒 유치원은 나이스 개방 API에서 제공되지 않아 검색이 안 돼요.<br>학교 검색 없이 <b>④ 식단 다듬기 → 식단 직접 수정</b> 칸에 유치원 식단을 붙여넣으면 프롬프트가 똑같이 만들어집니다.';
+      status.innerHTML='🧒 유치원은 나이스 개방 API에서 제공되지 않아 검색이 안 돼요.<br>바로 아래 <b>📄 나이스 월간식단표 엑셀 업로드</b> 버튼으로 식단 엑셀을 올리면 검색 없이 그대로 사용할 수 있어요. (식단을 직접 붙여넣는 방법도 가능: ④ 식단 다듬기 → 식단 직접 수정)';
       return;
     }
     if(!schoolRows.length){
@@ -1258,6 +1268,76 @@ async function loadMeals(){
     status.textContent=`${state.loadedMeals.length}일의 중식을 불러왔습니다.${noMealCount?` 급식 없는 평일 ${noMealCount}일은 미급식일 문구로 채웠습니다.`:''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
   }catch(e){ status.textContent=e.message; status.className='api-status error'; }
 }
+
+// ===== 나이스 월간식단표 엑셀 업로드 (유치원 등 학교 검색이 안 되는 기관용) =====
+function parseMonthlyExcel(book){
+  const ws=book.Sheets[book.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  let year='',mon='',orgName='';
+  for(const row of rows){for(const cell of row){const t=String(cell||'').trim();
+    const ym=t.match(/조회년월\s*:\s*(\d{4})년\s*(\d{1,2})월/);
+    if(ym){year=ym[1];mon=String(ym[2]).padStart(2,'0');}
+    if(!orgName&&/(학교|유치원)$/.test(t)&&!/조회|월간|식단/.test(t))orgName=t;
+  }}
+  if(!year||!mon)throw new Error('엑셀에서 조회 연월을 찾지 못했어요. 나이스 월간식단표 엑셀 파일인지 확인해 주세요.');
+  const meals=[];
+  for(let r=0;r<rows.length-1;r++){
+    const dr=rows[r]||[],mr=rows[r+1]||[];
+    const nd=[];
+    for(let c=0;c<dr.length;c++){const v=String(dr[c]??'').trim().replace(/\.0$/,'');if(/^\d{1,2}$/.test(v)){const day=+v;if(day>=1&&day<=31)nd.push({c,day});}}
+    if(!nd.length)continue;
+    const looks=mr.some(cell=>{const t=String(cell||'');return /\n/.test(t)||/중식/.test(t)||/에너지/.test(t);});
+    if(!looks)continue;
+    for(const {c,day} of nd){
+      const raw=String(mr[c]||'').replace(/\r/g,'').trim();
+      if(!raw||raw==='0')continue;
+      const lines=raw.split('\n').map(x=>x.trim()).filter(Boolean);
+      const ei=lines.findIndex(x=>/^\*?\s*에너지/.test(x));
+      const menu=(ei>=0?lines.slice(0,ei):lines.slice()).filter(x=>x!=='[식단]'&&x!=='중식'&&x!=='0');
+      let nutrition='';
+      if(ei>=0&&lines[ei+1]){const nums=lines[ei+1].replace(/,/g,'').split('/').map(x=>x.trim());const parts=[];if(nums[0])parts.push(`에너지 ${nums[0]}Kcal`);if(nums[1])parts.push(`단백질 ${nums[1]}g`);nutrition=parts.join(', ');}
+      if(!menu.length)continue;
+      meals.push({date:`${year}${mon}${String(day).padStart(2,'0')}`,dateLabel:`${year}년 ${Number(mon)}월 ${day}일`,dishes:menu,nutrition});
+    }
+  }
+  if(!meals.length)throw new Error('날짜별 식단을 찾지 못했어요. 나이스 월간식단표 엑셀 파일인지 확인해 주세요.');
+  meals.sort((a,b)=>a.date.localeCompare(b.date));
+  return {meals,orgName,year,mon};
+}
+async function loadExcelMeals(file){
+  const status=document.getElementById('apiStatus');
+  const out=document.getElementById('mealResults');
+  if(typeof XLSX==='undefined'){status.textContent='엑셀 기능을 불러오지 못했어요. 인터넷 연결을 확인하고 페이지를 새로고침해 주세요.';status.className='api-status error';return;}
+  try{
+    const {meals,orgName,year,mon}=parseMonthlyExcel(XLSX.read(await file.arrayBuffer(),{type:'array'}));
+    syncApiDates();
+    let from=ymd(startDate.value),to=ymd(endDate.value||startDate.value);
+    let sel=meals.filter(m=>m.date>=from&&m.date<=to);
+    let adjusted=false;
+    if(!sel.length){
+      // 선택한 날짜에 식단이 없으면 엑셀의 첫 날짜로 자동 조정
+      const first=meals[0].date;
+      const fd=`${first.slice(0,4)}-${first.slice(4,6)}-${first.slice(6,8)}`;
+      startDate.value=fd;
+      if(state.mode==='day'){endDate.value=fd;}
+      else{const base=new Date(fd+'T00:00:00');const end=new Date(base);end.setDate(base.getDate()+4);endDate.value=formatDateInput(end);}
+      from=ymd(startDate.value);to=ymd(endDate.value);
+      sel=meals.filter(m=>m.date>=from&&m.date<=to);
+      adjusted=true;
+    }
+    state.loadedMeals=sel;
+    const merged=mergeNoMealDays(sel);
+    state.rawMealText=buildMealTextFromLoadedMeals(merged);
+    out.innerHTML=merged.map(m=>`<div class="meal-item"${m.isNoMeal?' style="opacity:.65"':''}><b>${m.dateLabel}</b><div>${m.dishes.map(x=>escapeHtml(x)).join('<br>')}</div>${m.nutrition?`<div class="status">영양정보: ${escapeHtml(m.nutrition)}</div>`:''}</div>`).join('');
+    mealEditInput.value=state.rawMealText;
+    if(!mainMenuInput.value.trim()&&sel[0]?.dishes?.length)mainMenuInput.value=sel[0].dishes[0];
+    updatePrompt();
+    status.className='api-status';
+    status.textContent=`📄 ${orgName?orgName+' ':''}${year}년 ${Number(mon)}월 식단 ${meals.length}일 중 조회 범위의 ${sel.length}일을 불러왔어요.${adjusted?' (선택한 날짜에 식단이 없어 엑셀의 첫 날짜로 자동 조정했어요.)':''} 식단 다듬기와 최종 프롬프트에 반영되었습니다.`;
+  }catch(e){status.textContent='엑셀 업로드 실패: '+e.message;status.className='api-status error';}
+}
+document.getElementById('excelBtn').addEventListener('click',()=>document.getElementById('excelFile').click());
+document.getElementById('excelFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadExcelMeals(f);e.target.value='';});
 
 document.getElementById('schoolSearchBtn').addEventListener('click',searchSchools);
 document.getElementById('schoolQuery').addEventListener('keydown',e=>{if(e.key==='Enter')searchSchools();});
