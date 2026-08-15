@@ -1428,5 +1428,21 @@ document.getElementById('clearMealsBtn').addEventListener('click',()=>{
 
 updateUI();
 </script>
+<script>
+/* 급식소리함 로그인 게이트 + 내 학교 자동 연동 */
+window.addEventListener('sori-ready', function (e) {
+  try {
+    var p = e.detail && e.detail.profile;
+    if (!p || !p.schoolCode) return;
+    if (typeof selectSchool === 'function' && (!state.selectedSchool)) {
+      selectSchool({ atptCode: p.officeCode, schoolCode: p.schoolCode, name: p.school });
+      var st = document.getElementById('apiStatus');
+      if (st) st.textContent = '급식소리함에 등록된 내 학교(' + p.school + ')로 자동 설정했어요.';
+    }
+  } catch (err) {}
+});
+if (window.SORI) window.dispatchEvent(new CustomEvent('sori-ready', { detail: window.SORI }));
+</script>
+<script src="https://geupsik-soriham.vercel.app/sori-gate.js"></script>
 </body>
 </html>
